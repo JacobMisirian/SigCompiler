@@ -37,13 +37,6 @@ namespace SigCompiler.Emit
                 append("STRING \"{0}\"", pair.Value);
             }
 
-            append(".printc");
-            append("pop b");
-            append("pop a");
-            append("push b");
-            append("stobi 65534, a");
-            append("reti 0");
-
             append(".end{0}", end);
 
             return output.ToString();
@@ -71,9 +64,24 @@ namespace SigCompiler.Emit
             {
                 case BinaryOperation.Assignment:
                     node.Right.Visit(this);
-                    string variable = ((IdentifierNode)node.Left).Identifier;
-                    storeLocal(node.Left.SourceLocation, variable, "b");
-                    append("push b");
+                    if (node.Left is IdentifierNode)
+                    {
+                        storeLocal(node.Left.SourceLocation, ((IdentifierNode)node.Left).Identifier, "b");
+                        append("push b");
+                    }
+                    else if (node.Left is IndexerNode)
+                    {
+                        append("pop c");
+                        var indexer = node.Left as IndexerNode;
+                        indexer.Index.Visit(this);
+                        if (indexer.Target is IdentifierNode)
+                            loadLocal(indexer.Target.SourceLocation, ((IdentifierNode)indexer.Target).Identifier);
+                        append("pop a");
+                        append("pop b");
+                        append("add a, b");
+                        append("stob a, c");
+                        append("push c");
+                    }
                     break;
                 case BinaryOperation.Addition:
                     append("add a, b");
@@ -268,8 +276,7 @@ namespace SigCompiler.Emit
         private void storeLocal(SourceLocation location, string variable, string register)
         {
             append("pop {0}", register);
-            append("mov a, {0}", BP);
-            append("subi a, {0}", table.GetOffset(location, variable));
+            loadLocalPtr(location, variable, "a");
             switch (table.GetSize(location, variable))
             {
                 case 1:
@@ -283,8 +290,8 @@ namespace SigCompiler.Emit
 
         private void loadLocal(SourceLocation location, string variable)
         {
-            append("mov a, {0}", BP);
-            append("subi a, {0}", table.GetOffset(location, variable));
+            loadLocalPtr(location, variable, "a");
+
             switch (table.GetSize(location, variable))
             {
                 case 1:
@@ -295,6 +302,12 @@ namespace SigCompiler.Emit
                     break;
             }
             append("push a");
+        }
+
+        private void loadLocalPtr(SourceLocation location, string variable, string register)
+        {
+            append("mov {0}, {1}", register, BP);
+            append("subi {0}, {1}", register, table.GetOffset(location, variable));
         }
 
         private void append(string strf, params object[] args)
