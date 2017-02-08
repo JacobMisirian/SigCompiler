@@ -168,10 +168,8 @@ namespace SigCompiler.Emit
            
             for (int i = node.Parameters.Count - 1; i >= 0; i--)
             {
-                append("pop b");
-                append("mov a, {0}", BP);
-                append("subi a, {0}", table.AddSymbol(node.Parameters[i].Variable, DataType.Types[node.Parameters[i].Type]));
-                append("ston a, b, {0}", DataType.Types[node.Parameters[i].Type]);
+                table.AddSymbol(node.Parameters[i].Variable, DataType.Types[node.Parameters[i].Type]);
+                storeLocal(node.Parameters[i].SourceLocation, node.Parameters[i].Variable, "b");
             }
 
             append("push c");

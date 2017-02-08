@@ -33,7 +33,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="SignalAsm">
-      <HintPath>..\..\SignalAsm\SignalAsm\bin\Debug\SignalAsm.exe</HintPath>
+      <HintPath>..\..\..\SignalVM\asm\SignalAsm\bin\Debug\SignalAsm.exe</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
