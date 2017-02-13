@@ -13,7 +13,7 @@ namespace SigCompiler
         {
             try
             {
-                var ast = new SigParser(new Lexer().Scan(args[0], File.ReadAllText(args[0]))).Parse();
+                var ast = new SigParser(new PreprocessorHandler().ProcessFile(args[0])).Parse();
                 Console.WriteLine(new Compiler().Compile(ast));
             }
             catch (CompilerException ex)
