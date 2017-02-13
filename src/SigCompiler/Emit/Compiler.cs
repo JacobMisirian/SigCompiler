@@ -5,14 +5,15 @@ using System.Text;
 using SigCompiler.Parser;
 using SigCompiler.Parser.Ast;
 
-using SignalAsm;
-
 namespace SigCompiler.Emit
 {
     public class Compiler : IVisitor
     {
+        private const int BP_INITIAL = 5000;
+
         private const string BP = "h";
         private const string FLAGS = "p";
+
         private SymbolTable table;
 
         private StringBuilder output;
@@ -25,11 +26,16 @@ namespace SigCompiler.Emit
             output = new StringBuilder();
             strings = new Dictionary<string, string>();
 
-            append("li {0}, 5000", BP);
+            append("li {0}, {1}", BP, BP_INITIAL);
+            foreach (var child in ((CodeBlockNode)ast).Children)
+                if (child is StaticVariableNode)
+                    child.Visit(this);
             append("call .main");
             string end = nextSymbol();
             append("jmp .end{0}", end);
-            ast.Visit(this);
+            foreach (var child in ((CodeBlockNode)ast).Children)
+                if (child is FuncNode   )
+                    child.Visit(this);
 
             foreach (var pair in strings)
             {
@@ -75,7 +81,7 @@ namespace SigCompiler.Emit
                         var indexer = node.Left as IndexerNode;
                         indexer.Index.Visit(this);
                         if (indexer.Target is IdentifierNode)
-                            loadLocal(indexer.Target.SourceLocation, ((IdentifierNode)indexer.Target).Identifier);
+                            indexer.Target.Visit(this);
                         append("pop a");
                         append("pop b");
                         append("add a, b");
@@ -167,7 +173,6 @@ namespace SigCompiler.Emit
         public void Accept(FuncNode node)
         {
             int preFuncLocals = table.CurrentOffset;
-            table.AddGlobalSymbol(node.Name, preFuncLocals);
             table.PushScope();
 
             append(".{0}", node.Name);
@@ -176,7 +181,7 @@ namespace SigCompiler.Emit
            
             for (int i = node.Parameters.Count - 1; i >= 0; i--)
             {
-                table.AddSymbol(node.Parameters[i].Variable, DataType.Types[node.Parameters[i].Type]);
+                table.AddSymbol(node.Parameters[i].Variable, DataType.GetSizeByType(node.Parameters[i].SourceLocation, node.Parameters[i].Type));
                 storeLocal(node.Parameters[i].SourceLocation, node.Parameters[i].Variable, "b");
             }
 
@@ -200,7 +205,10 @@ namespace SigCompiler.Emit
         }
         public void Accept(IdentifierNode node)
         {
-            loadLocal(node.SourceLocation, node.Identifier);
+            if (table.ContainsGlobalSymbol(node.SourceLocation, node.Identifier))
+                loadStatic(node.SourceLocation, node.Identifier);
+            else
+                loadLocal(node.SourceLocation, node.Identifier);
         }
         public void Accept(IfNode node)
         {
@@ -234,7 +242,7 @@ namespace SigCompiler.Emit
         }
         public void Accept(LocalDeclarationNode node)
         {
-            table.AddSymbol(node.Variable, DataType.Types[node.Type]);
+            table.AddSymbol(node.Variable, DataType.GetSizeByType(node.SourceLocation, node.Type));
             if (node.InitialValue != null)
             {
                 node.InitialValue.Visit(this);
@@ -247,6 +255,16 @@ namespace SigCompiler.Emit
             append("pop a");
             append("pop {0}", BP);
             append("ret a");
+        }
+        public void Accept(StaticVariableNode node)
+        {
+            table.AddGlobalSymbol(node.SourceLocation, node.Variable, DataType.GetSizeByType(node.SourceLocation, node.Type));
+            if (node.Expression != null)
+            {
+                node.Expression.Visit(this);
+                storeStatic(node.SourceLocation, node.Variable, "a", "b");
+            }
+
         }
         public void Accept(StringNode node)
         {
@@ -304,10 +322,48 @@ namespace SigCompiler.Emit
             append("push a");
         }
 
+        private void storeStatic(SourceLocation location, string variable, string register1, string register2)
+        {
+            append("pop {0}", register1);
+            append("li {0}, {1}", register2, getStaticPtr(location, variable));
+            
+            switch (table.GetGlobalSize(location, variable))
+            {
+                case 1:
+                    append("stob {0}, {1}", register2, register1);
+                    break;
+                case 2:
+                    append("stow {0}, {1}", register2, register1);
+                    break;
+            }
+        }
+
+        private void loadStatic(SourceLocation location, string variable)
+        {
+            int ptr = getStaticPtr(location, variable);
+            append("li a, {0}", getStaticPtr(location, variable));
+
+            switch (table.GetGlobalSize(location, variable))
+            {
+                case 1:
+                    append("loadb a, a");
+                    break;
+                case 2:
+                    append("loadw a, a");
+                    break;
+            }
+            append("push a");
+        }
+
         private void loadLocalPtr(SourceLocation location, string variable, string register)
         {
             append("mov {0}, {1}", register, BP);
             append("subi {0}, {1}", register, table.GetOffset(location, variable));
+        }
+
+        private int getStaticPtr(SourceLocation location, string variable)
+        {
+            return BP_INITIAL + table.GetGlobalOffset(location, variable);
         }
 
         private void append(string strf, params object[] args)
@@ -322,4 +378,3 @@ namespace SigCompiler.Emit
         }
     }
 }
-

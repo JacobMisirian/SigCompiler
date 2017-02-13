@@ -20,6 +20,7 @@ namespace SigCompiler.Parser
         void Accept(IntegerNode node);
         void Accept(LocalDeclarationNode node);
         void Accept(ReturnNode node);
+        void Accept(StaticVariableNode node);
         void Accept(StringNode node);
         void Accept(UnaryOperationNode node);
         void Accept(WhileNode node);

@@ -34,6 +34,8 @@ namespace SigCompiler.Parser
                 return parseFunc();
             else if (matchToken(TokenType.Identifier, "return"))
                 return parseReturn();
+            else if (matchToken(TokenType.Identifier, "static"))
+                return parseStaticVariable();
             else if (matchToken(TokenType.Identifier, "while"))
                 return parseWhile();
             else if (acceptToken(TokenType.OpenBracket))
@@ -104,6 +106,16 @@ namespace SigCompiler.Parser
             if (acceptToken(TokenType.Semicolon))
                 return new ReturnNode(Location);
             return new ReturnNode(Location, parseExpression());
+        }
+        private StaticVariableNode parseStaticVariable()
+        {
+            expectToken(TokenType.Identifier, "static");
+            string type = expectToken(TokenType.Identifier).Value;
+            string variable = expectToken(TokenType.Identifier).Value;
+
+            if (acceptToken(TokenType.Assignment))
+                return new StaticVariableNode(Location, type, variable, parseExpression());
+            return new StaticVariableNode(Location, type, variable);
         }
         private WhileNode parseWhile()
         {
