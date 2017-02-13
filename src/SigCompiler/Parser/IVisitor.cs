@@ -7,6 +7,7 @@ namespace SigCompiler.Parser
     public interface IVisitor
     {
         void Accept(ArgumentListNode node);
+        void Accept(ArrayNode node);
         void Accept(AttributeAccessNode node);
         void Accept(BinaryOperationNode node);
         void Accept(CharNode node);

@@ -62,6 +62,14 @@ namespace SigCompiler.Parser
             }
             return new ArgumentListNode(Location, args.ToArray());
         }
+        private ArrayNode parseArrayDeclaration()
+        {
+            expectToken(TokenType.Identifier, "array");
+            string variable = expectToken(TokenType.Identifier).Value;
+            int size = Convert.ToInt32(expectToken(TokenType.Integer).Value);
+
+            return new ArrayNode(Location, variable, size);
+        }
         private FuncNode parseFunc()
         {
             var location = Location;

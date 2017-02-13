@@ -53,6 +53,11 @@ namespace SigCompiler.Emit
             for (int i = node.Arguments.Count - 1; i >= 0; i--)
                 node.Arguments[i].Visit(this);
         }
+        public void Accept(ArrayNode node)
+        {
+            table.AddSymbol(node.Variable, DataType.GetSizeByType(node.SourceLocation, "ptr") + node.Size);
+            
+        }
         public void Accept(AttributeAccessNode node)
         {
         }
