@@ -99,8 +99,6 @@ namespace SigCompiler.Emit
         public void PopScope()
         {
             scopes.Pop();
-            if (scopes.Count < 1)
-                CurrentOffset = 0;
         }
 
         private class Scope
