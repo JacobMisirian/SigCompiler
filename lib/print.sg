@@ -1,0 +1,20 @@
+#define SERIAL_POS 0xFFFE
+
+static ptr serial = SERIAL_POS;
+
+func printc (byte c) {
+	serial [0] = c;
+}
+
+func printstr (ptr str) {
+	short i = 0;
+	while (str [i] != 0) {
+		printc (str [i]);
+		i += 1;
+	}
+}
+
+func printstrln (ptr str) {
+	printstr (str);
+	printc (10);
+}

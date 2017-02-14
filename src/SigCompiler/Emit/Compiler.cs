@@ -134,6 +134,14 @@ namespace SigCompiler.Emit
                     append("xor a, b");
                     append("push a");
                     break;
+                case BinaryOperation.LogicalAnd:
+                    append("and a, b");
+                    append("neqi a, 0");
+                    append("push a");
+                    break;
+                case BinaryOperation.LogicalOr:
+
+                    break;
                 case BinaryOperation.Equality:
                     append("eq a, b");
                     append("push a");
@@ -184,7 +192,7 @@ namespace SigCompiler.Emit
             append("pop c");
             append("subi {0}, {1}", BP, preFuncLocals);
            
-            for (int i = node.Parameters.Count - 1; i >= 0; i--)
+            for (int i = 0; i < node.Parameters.Count; i++)
             {
                 table.AddSymbol(node.Parameters[i].Variable, DataType.GetSizeByType(node.Parameters[i].SourceLocation, node.Parameters[i].Type));
                 storeLocal(node.Parameters[i].SourceLocation, node.Parameters[i].Variable, "b");
