@@ -14,7 +14,7 @@ namespace SigCompiler.Parser.Ast
         {
             SourceLocation = location;
 
-            Target = Target;
+            Target = target;
 
             UnaryOperation = unaryOperation;
         }
@@ -32,12 +32,14 @@ namespace SigCompiler.Parser.Ast
     public enum UnaryOperation
     {
         BitwiseNot,
+        Dereference,
         LogicalNot,
         Negate,
         PostDecrement,
         PostIncrement,
         PreDecrement,
-        PreIncrement
+        PreIncrement,
+        Reference
     }
 }
 

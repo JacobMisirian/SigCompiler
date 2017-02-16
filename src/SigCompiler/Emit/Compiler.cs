@@ -9,7 +9,7 @@ namespace SigCompiler.Emit
 {
     public class Compiler : IVisitor
     {
-        private const int BP_INITIAL = 5000;
+        private const int BP_INITIAL = 15000;
 
         private const string BP = "h";
         private const string FLAGS = "p";
@@ -55,8 +55,11 @@ namespace SigCompiler.Emit
         }
         public void Accept(ArrayNode node)
         {
-            table.AddSymbol(node.Variable, DataType.GetSizeByType(node.SourceLocation, "ptr") + node.Size);
-            
+            table.AddSymbol(node.Variable, DataType.GetSizeByType(node.SourceLocation, "ptr"));
+            table.CurrentOffset += node.Size;
+            loadLocalPtr(node.SourceLocation, node.Variable, "a");
+            append("push a");
+            storeLocal(node.SourceLocation, node.Variable, "a");
         }
         public void Accept(AttributeAccessNode node)
         {
@@ -287,7 +290,18 @@ namespace SigCompiler.Emit
         }
         public void Accept(UnaryOperationNode node)
         {
-            
+            switch (node.UnaryOperation)
+            {
+                case UnaryOperation.Dereference:
+                    loadLocalPtr(node.SourceLocation, ((IdentifierNode)node.Target).Identifier, "a");
+                    append("push a");
+                    break;
+                case UnaryOperation.Reference:
+                    loadLocal(node.SourceLocation, ((IdentifierNode)node.Target).Identifier);
+                    append("pop a");
+                    
+                    break;
+            }
         }
         public void Accept(WhileNode node)
         {
@@ -353,7 +367,6 @@ namespace SigCompiler.Emit
 
         private void loadStatic(SourceLocation location, string variable)
         {
-            int ptr = getStaticPtr(location, variable);
             append("li a, {0}", getStaticPtr(location, variable));
 
             switch (table.GetGlobalSize(location, variable))

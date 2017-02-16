@@ -32,7 +32,8 @@ namespace SigCompiler.Scanner
 
             return tokens;
         }
-
+        
+        private List<string> files = new List<string>();
         private void scanPreprocessor(string line)
         {
             string[] parts = line.Split(' ');
@@ -43,6 +44,9 @@ namespace SigCompiler.Scanner
                     break;
                 case "include":
                     string filePath = findFile(parts[1]);
+                    if (files.Contains(filePath))
+                        break;
+                    files.Add(filePath);
                     if (!File.Exists(filePath))
                         throw new CompilerException(new SourceLocation(parts[1], 0, 0), "Could not find file {0}!", parts[1]);
                     foreach (var token in new PreprocessorHandler().ProcessFile(filePath))
@@ -56,7 +60,7 @@ namespace SigCompiler.Scanner
             string fileWithExtension = string.Format("{0}.{1}", file, EXTENSION);
             string fileInHome = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), file);
             string fileInHomeWithExtension = string.Format("{0}.{1}", fileInHome, EXTENSION);
-            string fileInHomeSig = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), FOLDER, file);
+            string fileInHomeSig = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "SigCompiler", "lib", file);
             string fileInHomeSigWithExtension = string.Format("{0}.{1}", fileInHomeSig, EXTENSION);
 
             if (File.Exists(fileWithExtension))

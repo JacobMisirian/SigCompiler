@@ -1,4 +1,4 @@
-using System;
+    using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -6,8 +6,8 @@ namespace SigCompiler.Emit
 {
     public class SymbolTable
     {
-        public int CurrentOffset { get; private set; }
-        public int CurrentGlobalOffset { get; private set; }
+        public int CurrentOffset { get; set; }
+        public int CurrentGlobalOffset { get; set; }
         private Stack<Scope> scopes = new Stack<Scope>();
         private Scope globalScope = new Scope();
 

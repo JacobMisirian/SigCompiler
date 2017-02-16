@@ -1,3 +1,41 @@
+func itoa (short num, ptr str, byte base) {
+	short i = 0;
+	byte isNeg = 0;
+	
+	if (num == 0) {
+		printstrln ("Is zero!");
+		str [i] = '0';
+		i += 1;
+		str [i] = 0;
+		return str;
+	}
+
+	if (num < 0 && base == 10) {
+		isNeg = 1;
+		num = 0 - num;
+	}
+
+	while (num != 0) {
+		short rem = num % base;
+		if (rem > 9) {
+			str [i] = (rem - 10) + 'a';
+		} else {
+			str [i] = rem + '0';
+		}
+		i += 1;
+		num = num / base;
+	}
+
+	if (isNeg) {
+		str [i] = '-';
+		i++;
+	}
+	str [i] = 0;
+
+	strrev (str);
+	return str;
+}
+
 func strlen (ptr str) {
 	short len = 0;
 	while (str [len] != 0) {

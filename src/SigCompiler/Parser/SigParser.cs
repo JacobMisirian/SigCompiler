@@ -28,7 +28,9 @@ namespace SigCompiler.Parser
 
         private AstNode parseStatement()
         {
-            if (matchToken(TokenType.Identifier, "if"))
+            if (matchToken(TokenType.Identifier, "array"))
+                return parseArrayDeclaration();
+            else if (matchToken(TokenType.Identifier, "if"))
                 return parseIf();
             else if (matchToken(TokenType.Identifier, "func"))
                 return parseFunc();
@@ -65,8 +67,11 @@ namespace SigCompiler.Parser
         private ArrayNode parseArrayDeclaration()
         {
             expectToken(TokenType.Identifier, "array");
-            string variable = expectToken(TokenType.Identifier).Value;
+            expectToken(TokenType.OpenBrace);
             int size = Convert.ToInt32(expectToken(TokenType.Integer).Value);
+            expectToken(TokenType.CloseBrace);
+
+            string variable = expectToken(TokenType.Identifier).Value;
 
             return new ArrayNode(Location, variable, size);
         }
@@ -141,7 +146,7 @@ namespace SigCompiler.Parser
         {
             var expr = parseExpression();
             acceptToken(TokenType.Semicolon);
-            if (expr is FunctionCallNode || expr is BinaryOperationNode)
+            if (expr is FunctionCallNode || expr is BinaryOperationNode || expr is UnaryOperationNode)
                 return new ExpressionStatementNode(Location, expr);
             return expr;
         }
@@ -380,6 +385,9 @@ namespace SigCompiler.Parser
                     case "++":
                         acceptToken(TokenType.Operation);
                         return new UnaryOperationNode(Location, UnaryOperation.PreIncrement, parseUnary());
+                    case "&":
+                        acceptToken(TokenType.Operation);
+                        return new UnaryOperationNode(Location, UnaryOperation.Dereference, parseUnary());
                 }
             }
             return parseAccess();
