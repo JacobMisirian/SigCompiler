@@ -70,6 +70,7 @@
     <Compile Include="Parser\Ast\IndexerNode.cs" />
     <Compile Include="Parser\Ast\LocalDeclarationNode.cs" />
     <Compile Include="Emit\DataType.cs" />
+    <Compile Include="Parser\Ast\StaticStructNode.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup />

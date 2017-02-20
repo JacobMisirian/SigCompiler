@@ -143,7 +143,9 @@ namespace SigCompiler.Emit
                     append("push a");
                     break;
                 case BinaryOperation.LogicalOr:
-
+                    append("or a, b");
+                    append("neqi a, 0");
+                    append("push a");
                     break;
                 case BinaryOperation.Equality:
                     append("eq a, b");
@@ -272,6 +274,10 @@ namespace SigCompiler.Emit
             append("pop {0}", BP);
             append("ret a");
         }
+        public void Accept(StaticStructNode node)
+        {
+
+        }
         public void Accept(StaticVariableNode node)
         {
             table.AddGlobalSymbol(node.SourceLocation, node.Variable, DataType.GetSizeByType(node.SourceLocation, node.Type));
@@ -280,7 +286,6 @@ namespace SigCompiler.Emit
                 node.Expression.Visit(this);
                 storeStatic(node.SourceLocation, node.Variable, "a", "b");
             }
-
         }
         public void Accept(StringNode node)
         {

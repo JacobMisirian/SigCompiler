@@ -37,7 +37,7 @@ namespace SigCompiler.Parser
             else if (matchToken(TokenType.Identifier, "return"))
                 return parseReturn();
             else if (matchToken(TokenType.Identifier, "static"))
-                return parseStaticVariable();
+                return parseStatic();
             else if (matchToken(TokenType.Identifier, "while"))
                 return parseWhile();
             else if (acceptToken(TokenType.OpenBracket))
@@ -120,9 +120,32 @@ namespace SigCompiler.Parser
                 return new ReturnNode(Location);
             return new ReturnNode(Location, parseExpression());
         }
-        private StaticVariableNode parseStaticVariable()
+        private AstNode parseStatic()
         {
             expectToken(TokenType.Identifier, "static");
+            if (matchToken(TokenType.Identifier, "struct"))
+                return parseStaticStruct();
+            return parseStaticVariable();
+        }
+        private StaticStructNode parseStaticStruct()
+        {
+            var location = Location;
+            expectToken(TokenType.Identifier, "struct");
+            string name = expectToken(TokenType.Identifier).Value;
+            expectToken(TokenType.OpenBracket);
+            Dictionary<string, string> members = new Dictionary<string, string>();
+            while (!acceptToken(TokenType.CloseBracket))
+            {
+                string type = expectToken(TokenType.Identifier).Value;
+                string _name = expectToken(TokenType.Identifier).Value;
+                acceptToken(TokenType.Semicolon);
+                members.Add(_name, type);
+            }
+
+            return new StaticStructNode(location, name, members);
+        }
+        private StaticVariableNode parseStaticVariable()
+        {
             string type = expectToken(TokenType.Identifier).Value;
             string variable = expectToken(TokenType.Identifier).Value;
 
