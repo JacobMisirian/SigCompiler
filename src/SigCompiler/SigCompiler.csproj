@@ -37,6 +37,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Emit\Struct.cs" />
     <Compile Include="Parser\Ast\ArrayNode.cs" />
     <Compile Include="Parser\Ast\StaticVariableNode.cs" />
     <Compile Include="Program.cs" />
@@ -62,7 +63,7 @@
     <Compile Include="Parser\Ast\IntegerNode.cs" />
     <Compile Include="Parser\Ast\CodeBlockNode.cs" />
     <Compile Include="Parser\Ast\CharNode.cs" />
-    <Compile Include="Parser\Ast\AttributeAccessNode.cs" />
+    <Compile Include="Parser\Ast\StaticAttributeAccessNode.cs" />
     <Compile Include="Parser\Ast\ExpressionStatementNode.cs" />
     <Compile Include="Emit\Compiler.cs" />
     <Compile Include="Emit\SymbolTable.cs" />

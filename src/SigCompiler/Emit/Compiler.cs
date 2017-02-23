@@ -18,6 +18,7 @@ namespace SigCompiler.Emit
 
         private StringBuilder output;
         private Dictionary<string, string> strings;
+        private Dictionary<string, Struct> structs;
 
         public string Compile(AstNode ast)
         {
@@ -25,12 +26,14 @@ namespace SigCompiler.Emit
 
             output = new StringBuilder();
             strings = new Dictionary<string, string>();
+            structs = new Dictionary<string, Struct>();
 
             append("li {0}, {1}", BP, BP_INITIAL);
             foreach (var child in ((CodeBlockNode)ast).Children)
-                if (child is StaticVariableNode)
+                if (child is StaticVariableNode || child is StaticStructNode)
                     child.Visit(this);
-            append("call .main");
+            append("li a, .main");
+            append("call a");
             string end = nextSymbol();
             append("jmp .end{0}", end);
             foreach (var child in ((CodeBlockNode)ast).Children)
@@ -58,11 +61,34 @@ namespace SigCompiler.Emit
             table.AddSymbol(node.Variable, DataType.GetSizeByType(node.SourceLocation, "ptr"));
             table.CurrentOffset += node.Size;
             loadLocalPtr(node.SourceLocation, node.Variable, "a");
+            append("addi a, {0}", DataType.GetSizeByType(node.SourceLocation, "ptr"));
             append("push a");
-            storeLocal(node.SourceLocation, node.Variable, "a");
+            storeLocal(node.SourceLocation, node.Variable, "b");
         }
-        public void Accept(AttributeAccessNode node)
+
+        public void Accept(StaticAttributeAccessNode node)
         {
+            if (!structs.ContainsKey(node.Left))
+                throw new CompilerException(node.SourceLocation, "No such struct {0}!", node.Left);
+
+            Struct struct_ = structs[node.Left];
+            if (!struct_.IsStatic)
+                throw new CompilerException(node.SourceLocation, "Static reference to non-static struct {0}!", node.Left);
+            if (!struct_.ContainsMember(node.Right))
+                throw new CompilerException(node.SourceLocation, "No such member {0}, in struct {1}", node.Right, node.Left);
+
+            int address = BP_INITIAL + table.GetGlobalOffset(node.SourceLocation, node.Left, true) + struct_.GetOffset(node.Right);
+            append("li a, {0}", address);
+            switch (struct_.GetSize(node.Right))
+            {
+                case 1:
+                    append("loadb a, a");
+                    break;
+                case 2:
+                    append("loadw a, a");
+                    break;
+            }
+            append("push a");
         }
         public void Accept(BinaryOperationNode node)
         {
@@ -95,6 +121,27 @@ namespace SigCompiler.Emit
                         append("add a, b");
                         append("stob a, c");
                         append("push c");
+                    }
+                    else if (node.Left is StaticAttributeAccessNode)
+                    {
+                        append("pop b");
+                        string left = ((StaticAttributeAccessNode)node.Left).Left;
+                        string right = ((StaticAttributeAccessNode)node.Left).Right;
+                        Struct struct_ = structs[left];
+                        if (!struct_.IsStatic)
+                            throw new CompilerException(node.SourceLocation, "Static reference to non-static struct {0}!", left);
+                        int location = BP_INITIAL + table.GetGlobalOffset(node.SourceLocation, left, true) + struct_.GetOffset(right);
+                        append("li a, {0}", location);
+                        switch (struct_.GetSize(right))
+                        {
+                            case 1:
+                                append("stob a, b");
+                                break;
+                            case 2:
+                                append("stow a, b");
+                                break;
+                        }
+                        append("push b");
                     }
                     break;
                 case BinaryOperation.Addition:
@@ -218,15 +265,18 @@ namespace SigCompiler.Emit
         public void Accept(FunctionCallNode node)
         {
             node.Arguments.Visit(this);
-            string func = ((IdentifierNode)node.Target).Identifier;
-            append("call .{0}", func, node.Arguments.Arguments.Count);
+            node.Target.Visit(this);
+            append("pop a");
+            append("call a");
         }
         public void Accept(IdentifierNode node)
         {
             if (table.ContainsGlobalSymbol(node.SourceLocation, node.Identifier))
                 loadStatic(node.SourceLocation, node.Identifier);
-            else
+            else if (table.ContainsSymbol(node.Identifier))
                 loadLocal(node.SourceLocation, node.Identifier);
+            else
+                append("pushi .{0}", node.Identifier);
         }
         public void Accept(IfNode node)
         {
@@ -276,7 +326,14 @@ namespace SigCompiler.Emit
         }
         public void Accept(StaticStructNode node)
         {
+            Struct struct_ = new Struct(node.Name, true);
 
+            foreach (var pair in node.Members)
+                struct_.AddMember(pair.Key, DataType.GetSizeByType(node.SourceLocation, pair.Value));
+
+            table.AddGlobalSymbol(node.SourceLocation, node.Name, 2, true);
+            structs.Add(struct_.Name, struct_);
+            table.CurrentGlobalOffset += struct_.Size;
         }
         public void Accept(StaticVariableNode node)
         {
@@ -323,20 +380,6 @@ namespace SigCompiler.Emit
             append(".{0}", end);
         }
 
-        private void storeLocal(SourceLocation location, string variable, string register)
-        {
-            append("pop {0}", register);
-            loadLocalPtr(location, variable, "a");
-            switch (table.GetSize(location, variable))
-            {
-                case 1:
-                    append("stob a, {0}", register);
-                    break;
-                case 2:
-                    append("stow a, {0}", register);
-                    break;
-            }
-        }
 
         private void loadLocal(SourceLocation location, string variable)
         {
@@ -353,21 +396,24 @@ namespace SigCompiler.Emit
             }
             append("push a");
         }
-
-        private void storeStatic(SourceLocation location, string variable, string register1, string register2)
+        private void storeLocal(SourceLocation location, string variable, string register)
         {
-            append("pop {0}", register1);
-            append("li {0}, {1}", register2, getStaticPtr(location, variable));
-            
-            switch (table.GetGlobalSize(location, variable))
+            append("pop {0}", register);
+            loadLocalPtr(location, variable, "a");
+            switch (table.GetSize(location, variable))
             {
                 case 1:
-                    append("stob {0}, {1}", register2, register1);
+                    append("stob a, {0}", register);
                     break;
                 case 2:
-                    append("stow {0}, {1}", register2, register1);
+                    append("stow a, {0}", register);
                     break;
             }
+        }
+        private void loadLocalPtr(SourceLocation location, string variable, string register)
+        {
+            append("mov {0}, {1}", register, BP);
+            append("subi {0}, {1}", register, table.GetOffset(location, variable));
         }
 
         private void loadStatic(SourceLocation location, string variable)
@@ -385,16 +431,40 @@ namespace SigCompiler.Emit
             }
             append("push a");
         }
-
-        private void loadLocalPtr(SourceLocation location, string variable, string register)
+        private void storeStatic(SourceLocation location, string variable, string register1, string register2)
         {
-            append("mov {0}, {1}", register, BP);
-            append("subi {0}, {1}", register, table.GetOffset(location, variable));
+            append("pop {0}", register1);
+            append("li {0}, {1}", register2, getStaticPtr(location, variable));
+            
+            switch (table.GetGlobalSize(location, variable))
+            {
+                case 1:
+                    append("stob {0}, {1}", register2, register1);
+                    break;
+                case 2:
+                    append("stow {0}, {1}", register2, register1);
+                    break;
+            }
         }
-
         private int getStaticPtr(SourceLocation location, string variable)
         {
             return BP_INITIAL + table.GetGlobalOffset(location, variable);
+        }
+
+        private void loadFromaddress(SourceLocation location, int address, int size)
+        {
+            append("li a, {0}", address);
+
+            switch (size)
+            {
+                case 1:
+                    append("loadb a, a");
+                    break;
+                case 2:
+                    append("loadw a, a");
+                    break;
+            }
+            append("push a");
         }
 
         private void append(string strf, params object[] args)

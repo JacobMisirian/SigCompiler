@@ -2,15 +2,15 @@ using System;
 
 namespace SigCompiler.Parser.Ast
 {
-    public class AttributeAccessNode : AstNode
+    public class StaticAttributeAccessNode : AstNode
     {
         public override SourceLocation SourceLocation { get; set; }
 
-        public AstNode Left { get; private set; }
+        public string Left { get; private set; }
 
         public string Right { get; private set; }
 
-        public AttributeAccessNode(SourceLocation location, AstNode left, string right)
+        public StaticAttributeAccessNode(SourceLocation location, string left, string right)
         {
             SourceLocation = location;
 

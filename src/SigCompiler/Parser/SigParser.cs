@@ -434,7 +434,7 @@ namespace SigCompiler.Parser
             else if (acceptToken(TokenType.Operation, "++"))
                 return new UnaryOperationNode(Location, UnaryOperation.PostIncrement, left);
             else if (acceptToken(TokenType.Dot))
-                return parseAccess(new AttributeAccessNode(Location, left, expectToken(TokenType.Identifier).Value));
+                return new StaticAttributeAccessNode(Location, ((IdentifierNode)left).Identifier, expectToken(TokenType.Identifier).Value);
             return left;
         }
         private AstNode parseTerm()

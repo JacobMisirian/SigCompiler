@@ -26,9 +26,10 @@ namespace SigCompiler.Emit
             return CurrentOffset;
         }
 
-        public int AddGlobalSymbol(SourceLocation location, string symbol, int size)
+        public int AddGlobalSymbol(SourceLocation location, string symbol, int size, bool isGlobal = false)
         {
-            symbol = location.File + symbol;
+            if (!isGlobal)
+                symbol = location.File + symbol;
 
             CurrentGlobalOffset += size;
             globalScope.Symbols.Add(symbol, CurrentGlobalOffset);
@@ -60,9 +61,10 @@ namespace SigCompiler.Emit
             return -1;
         }
 
-        public int GetGlobalOffset(SourceLocation location, string symbol)
+        public int GetGlobalOffset(SourceLocation location, string symbol, bool isGlobal = false)
         {
-            symbol = location.File + symbol;
+            if (!isGlobal)
+                symbol = location.File + symbol;
 
             if (!globalScope.Symbols.ContainsKey(symbol))
                 throw new CompilerException(location, "Could not find global symbol {0} in the current scope!", symbol);
