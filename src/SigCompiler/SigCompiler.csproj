@@ -72,6 +72,7 @@
     <Compile Include="Parser\Ast\LocalDeclarationNode.cs" />
     <Compile Include="Emit\DataType.cs" />
     <Compile Include="Parser\Ast\StaticStructNode.cs" />
+    <Compile Include="Emit\Optimizer.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup />

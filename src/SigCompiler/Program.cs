@@ -14,7 +14,7 @@ namespace SigCompiler
             try
             {
                 var ast = new SigParser(new PreprocessorHandler().ProcessFile(args[0])).Parse();
-                Console.WriteLine(new Compiler().Compile(ast));
+                Console.WriteLine(new Optimizer(new Compiler().Compile(ast)).Optimize());
             }
             catch (CompilerException ex)
             {
